@@ -1,4 +1,3 @@
-use raur::AurResponse;
 use raur::Config;
 use std::env;
 use std::error::Error;
@@ -9,7 +8,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("Problem parsing arguments: {}", err);
         process::exit(1);
     });
-    let resp = AurResponse();
+    let resp = config.run();
     println!("{:#?}", resp);
     Ok(())
 }

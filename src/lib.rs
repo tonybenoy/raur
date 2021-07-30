@@ -1,20 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::error::Error;
-fn search_aur(query_by: &str, query: &str, _type: &str) -> Result<AurResponse, reqwest::Error> {
-    let client = reqwest::blocking::Client::new();
-    let resp = client
-        .get("https://aur.archlinux.org/rpc/")
-        .query(&[
-            ("v", "5"),
-            ("type", _type),
-            ("by", query_by),
-            ("arg", query),
-        ])
-        .send()?;
-    let val_resp = &resp.text()?;
-    let val: AurResponse = serde_json::from_str(val_resp).unwrap();
-    Ok(val)
-}
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "PascalCase")]
@@ -61,7 +45,7 @@ pub struct Config {
 }
 
 impl Config {
-    fn new(args: &[String]) -> Result<Config, &str> {
+    pub fn new(args: &[String]) -> Result<Config, &str> {
         if args.len() < 4 {
             return Err("not enough arguments");
         }
@@ -75,7 +59,19 @@ impl Config {
             query_by,
         })
     }
-    fn run(&self, query_by: &str, query: &str) -> Result<AurResponse, reqwest::Error> {
-        search_aur(self.query_by, self.query, self._type)
+    pub fn run(&self) -> Result<AurResponse, reqwest::Error> {
+        let client = reqwest::blocking::Client::new();
+        let resp = client
+            .get("https://aur.archlinux.org/rpc/")
+            .query(&[
+                ("v", "5"),
+                ("type", &self._type),
+                ("by", &self.query_by),
+                ("arg", &self.query),
+            ])
+            .send()?;
+        let val_resp = &resp.text()?;
+        let val: AurResponse = serde_json::from_str(val_resp).unwrap();
+        Ok(val)
     }
 }
