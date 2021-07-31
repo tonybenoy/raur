@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
-
+use std::str::FromStr;
+use std::string::ToString;
+use strum_macros::{EnumString, ToString};
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "PascalCase")]
 #[allow(non_snake_case)]
@@ -39,22 +41,27 @@ pub trait Query {
 }
 
 pub struct Config {
-    _type: String,
+    functionality: Functionality,
     query_by: String,
     query: String,
 }
 
 impl Config {
     pub fn new(args: &[String]) -> Result<Config, &str> {
+        let _type = args[1].clone();
+        let functionality = Functionality::from_str(&_type);
+        if functionality.is_err() {
+            return Err("functionality not available");
+        }
+        let functionality = functionality.unwrap();
         if args.len() < 4 {
             return Err("not enough arguments");
         }
 
-        let _type = args[1].clone();
-        let query = args[2].clone();
-        let query_by = args[3].clone();
+        let query = args[3].clone();
+        let query_by = args[2].clone();
         Ok(Config {
-            _type,
+            functionality,
             query,
             query_by,
         })
@@ -65,13 +72,47 @@ impl Config {
             .get("https://aur.archlinux.org/rpc/")
             .query(&[
                 ("v", "5"),
-                ("type", &self._type),
+                ("type", &self.functionality.to_string()),
                 ("by", &self.query_by),
                 ("arg", &self.query),
             ])
             .send()?;
-        let val_resp = &resp.text()?;
-        let val: AurResponse = serde_json::from_str(val_resp).unwrap();
+        let val: AurResponse = serde_json::from_str(&resp.text()?).unwrap();
         Ok(val)
+    }
+}
+
+#[derive(Debug, EnumString, ToString)]
+pub enum Functionality {
+    #[strum(serialize = "search", serialize = "s")]
+    Search,
+    #[strum(serialize = "info", serialize = "i")]
+    Info,
+    #[strum(disabled)]
+    Install,
+}
+
+trait Validations {
+    fn validate(&self, arguments: Vec<String>) -> Result<Vec<String>, &str>;
+}
+
+impl Validations for Functionality {
+    fn validate(&self, arguments: Vec<String>) -> Result<Vec<String>, &str> {
+        match self {
+            Functionality::Search => {
+                if arguments.len() < 4 {
+                    return Err("not enough arguments");
+                } else {
+                    Ok(arguments)
+                }
+            }
+            Functionality::Info => {
+                if arguments.len() < 3 {
+                    return Err("not enough arguments");
+                }
+                Ok(arguments)
+            }
+            Functionality::Install => Ok(arguments),
+        }
     }
 }
