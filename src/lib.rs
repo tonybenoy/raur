@@ -70,9 +70,7 @@ impl Config {
             return Err("functionality not available");
         }
         let functionality = functionality.unwrap();
-        if functionality.validate(&args[2..args.len()]).is_err() {
-            return Err("invalid query");
-        }
+        functionality.validate(&args[2..args.len()]);
 
         let query = args[3].clone();
         let query_by = args[2].clone();
@@ -116,14 +114,14 @@ impl Validations for Functionality {
     fn validate(&self, arguments: &[String]) -> Result<(), Box<dyn Error>> {
         match self {
             Functionality::Search => {
-                if arguments.len() < 2 {
+                if arguments.len() < 4 {
                     return Err("not enough arguments".into());
                 } else {
                     Ok(())
                 }
             }
             Functionality::Info => {
-                if arguments.len() < 1 {
+                if arguments.len() < 3 {
                     return Err("not enough arguments".into());
                 }
                 Ok(())
