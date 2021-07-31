@@ -1,4 +1,6 @@
+use git2::Repository;
 use serde::{Deserialize, Serialize};
+use std::error::Error;
 use std::str::FromStr;
 use std::string::ToString;
 use strum_macros::{EnumString, ToString};
@@ -24,6 +26,20 @@ pub struct AurPkg {
     OptDepends: Option<Vec<String>>,
     License: Option<String>,
     keywords: Option<Vec<String>>,
+}
+
+pub trait Download {
+    fn download(&self, dest: String);
+}
+
+impl Download for AurPkg {
+    fn download(&self, dest: String) {
+        println!("Downloading {}...", self.name);
+        let repo = match Repository::clone(&self.URL, dest) {
+            Ok(repo) => repo,
+            Err(e) => panic!("failed to clone: {}", e),
+        };
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -54,8 +70,8 @@ impl Config {
             return Err("functionality not available");
         }
         let functionality = functionality.unwrap();
-        if args.len() < 4 {
-            return Err("not enough arguments");
+        if functionality.validate(&args[2..args.len()]).is_err() {
+            return Err("invalid query");
         }
 
         let query = args[3].clone();
@@ -93,26 +109,26 @@ pub enum Functionality {
 }
 
 trait Validations {
-    fn validate(&self, arguments: Vec<String>) -> Result<Vec<String>, &str>;
+    fn validate(&self, arguments: &[String]) -> Result<(), Box<dyn Error>>;
 }
 
 impl Validations for Functionality {
-    fn validate(&self, arguments: Vec<String>) -> Result<Vec<String>, &str> {
+    fn validate(&self, arguments: &[String]) -> Result<(), Box<dyn Error>> {
         match self {
             Functionality::Search => {
-                if arguments.len() < 4 {
-                    return Err("not enough arguments");
+                if arguments.len() < 2 {
+                    return Err("not enough arguments".into());
                 } else {
-                    Ok(arguments)
+                    Ok(())
                 }
             }
             Functionality::Info => {
-                if arguments.len() < 3 {
-                    return Err("not enough arguments");
+                if arguments.len() < 1 {
+                    return Err("not enough arguments".into());
                 }
-                Ok(arguments)
+                Ok(())
             }
-            Functionality::Install => Ok(arguments),
+            Functionality::Install => Ok(()),
         }
     }
 }
