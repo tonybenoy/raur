@@ -1,4 +1,7 @@
-use raur::Config;
+mod aur;
+mod func;
+mod settings;
+use settings::Config;
 use std::env;
 use std::error::Error;
 use std::process;

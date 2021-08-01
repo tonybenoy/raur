@@ -1,5 +1,6 @@
+use crate::func::Download;
+use git2::Repository;
 use serde::{Deserialize, Serialize};
-
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "PascalCase")]
 #[allow(non_snake_case)]
@@ -31,4 +32,14 @@ pub struct AurResponse {
     r#type: String,
     resultcount: i32,
     results: Vec<AurPkg>,
+}
+
+impl Download for AurPkg {
+    fn download(&self, dest: String) {
+        println!("Downloading {}...", self.name);
+        let repo = match Repository::clone(&self.URL, dest) {
+            Ok(repo) => repo,
+            Err(e) => panic!("failed to clone: {}", e),
+        };
+    }
 }
